@@ -25,20 +25,36 @@ def addMask(X,M):
     M[M>0] = 255
     XwMasks[:,:,2] += M.astype('float64')
     XwMasks[XwMasks>255] = 255
-    X = (0.6 * X + 0.4 * XwMasks).astype('uint8')
+    X = (0.5 * X + 0.5 * XwMasks).astype('uint8')
     return X
 
 def visualize_translated(images,masks):
     # initialize water image
     height = images[0].shape[0]
     width = images[0].shape[1]
-    water_depth = np.zeros((height, width,3), dtype=float)
 
     # initialize video writer
     fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
     # fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-    fps = 5
-    video_filename = 'output.avi'
+    fps = 7
+    video_filename = 'output3center.avi'
+    out = cv2.VideoWriter(video_filename, fourcc, fps, (width-150, height-150),True)
+    # h = np.argmax(masks[0][],0)
+    # w = np.argmax(masks[0],1)
+    for i, (image) in enumerate(images):
+        mask = masks[i]
+        image = addMask(image,mask)
+
+        plt.close('all')
+        plt.imshow(image)
+        plt.tight_layout()
+        plt.axis('off')
+
+        out.write(image[75:-75,75:-75,:])
+        plt.savefig(OUTPUTS_DIR + str(i+100) + '.png')
+
+    out.release()
+    video_filename = 'output3.avi'
     out = cv2.VideoWriter(video_filename, fourcc, fps, (width-50, height-50),True)
 
     for i, (image) in enumerate(images):
@@ -53,9 +69,9 @@ def visualize_translated(images,masks):
         plt.savefig(OUTPUTS_DIR + str(i+100) + '.png')
 
     out.release()
+    print('')
 
-
-im = cv2.imread("./car1.png")
+im = cv2.imread("./car2.png")
 
 
 cfg = get_cfg()
@@ -63,11 +79,15 @@ cfg.MODEL.DEVICE = 'cpu'
 
 # add project-specific config (e.g., TensorMask) here if you're not running a model in detectron2's core library
 # cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"))
-cfg.merge_from_file((MODEL_DIR + "mask_cascade_rcnn_ResNeSt_200_FPN_dcn_syncBN_all_tricks_3x.yml"))
+cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml"))
+# cfg.merge_from_file("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml")
 
 cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
 # Find a model from detectron2's model zoo. You can use the https://dl.fbaipublicfiles... url as well
-cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(MODEL_DIR + "mask_cascade_rcnn_ResNeSt_200_FPN_dcn_syncBN_all_tricks_3x.yml")
+
+# cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
+
+cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml")
 predictor = DefaultPredictor(cfg)
 
 
